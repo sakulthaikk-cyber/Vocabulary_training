@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทบทวนคำศัพท์ (Spelling Test)</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Prompt:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', 'Poppins', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-attachment: fixed; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; color: #333; }
+        .glass-container { width: 100%; max-width: 500px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 24px; padding: 25px 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2); text-align: center; }
+        h1 { color: #fff; font-size: 26px; margin-bottom: 20px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+        #profile-name { font-size: 16px; font-weight: 300; opacity: 0.9; }
+        
+        button { background: rgba(255, 255, 255, 0.4); color: #333; border: 1px solid rgba(255, 255, 255, 0.5); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 600; width: 100%; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.1); backdrop-filter: blur(5px); margin-bottom: 10px; }
+        button:hover { background: rgba(255, 255, 255, 0.6); transform: translateY(-2px); }
+        button.success { background: rgba(16, 185, 129, 0.75); color: white; border: none; }
+        button.success:hover { background: rgba(16, 185, 129, 0.9); }
+        button.warning { background: rgba(245, 158, 11, 0.75); color: white; border: none; }
+        button.warning:hover { background: rgba(245, 158, 11, 0.9); }
+        button.primary { background: rgba(59, 130, 246, 0.75); color: white; border: none; }
+        
+        .flashcard-container { perspective: 1000px; width: 100%; height: 280px; margin: 15px 0; cursor: pointer; }
+        .flashcard { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.15); background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.8); }
+        .card-front { color: #1e3a8a; }
+        .card-back { transform: rotateY(180deg); background: rgba(255, 255, 255, 0.85); color: #047857; border: 2px solid #fff; }
+        .word-text { font-size: 36px; font-weight: 700; margin-bottom: 5px; font-family: 'Poppins', 'Prompt', sans-serif; }
+        .hint { font-size: 14px; opacity: 0.6; margin-top: 15px; font-weight: 300; }
+        
+        .review-controls { display: flex; gap: 10px; margin-top: 10px; }
+        #loading { color: #fff; font-weight: 500; font-size: 18px; display: none; margin-bottom: 20px;}
+        .text-white { color: #fff; }
+        
+        .spell-input-group { margin-top: 20px; display: none; flex-direction: column; gap: 10px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 2px solid rgba(255,255,255,0.5); border-radius: 12px; font-size: 16px; background: rgba(255,255,255,0.8); outline: none; transition: all 0.3s; }
+        input[type="text"]:focus { border-color: #4F46E5; box-shadow: 0 0 10px rgba(79, 70, 229, 0.3); }
+        
+        .feedback { font-size: 16px; font-weight: bold; margin-top: 10px; min-height: 24px; }
+        .feedback.correct { color: #10B981; }
+        .feedback.wrong { color: #EF4444; }
+        
+        .menu-box { background: rgba(0,0,0,0.1); padding: 15px; border-radius: 16px; margin-bottom: 15px; }
+        
+        /* Navigation Tabs */
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .tab-btn.active { background: rgba(255,255,255,0.5); color: #1e3a8a; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .form-group { text-align: left; margin-bottom: 15px; }
+        .form-group label { color: white; font-weight: 500; display: block; margin-bottom: 5px; }
+
+        /* Vocabulary List Styles */
+        .vocab-list-container { max-height: 350px; overflow-y: auto; text-align: left; margin-top: 15px; padding-right: 5px; }
+        .vocab-list-container::-webkit-scrollbar { width: 6px; }
+        .vocab-list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 3px; }
+        
+        .vocab-item { background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.5); padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .vocab-item .words { display: flex; flex-direction: column; }
+        .vocab-item .eng { font-weight: bold; font-size: 18px; color: #1e3a8a; font-family: 'Poppins', sans-serif; }
+        .vocab-item .thai { font-size: 14px; color: #333; }
+        
+        .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 20px; font-weight: bold; white-space: nowrap; }
+        .status-learning { background: #F59E0B; color: white; }
+        .status-remembered { background: #10B981; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="glass-container">
+    <h1>✨ คลังคำศัพท์<br><span id="profile-name"></span></h1>
+    
+    <div id="loading">กำลังซิงค์ข้อมูล... ⏳</div>
+
+    <div id="main-content" style="display: none;">
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <div class="tab-btn active" id="tab-review" onclick="switchTab('review')">📚 ทบทวน</div>
+            <div class="tab-btn" id="tab-add" onclick="switchTab('add')">➕ เพิ่มคำ</div>
+            <div class="tab-btn" id="tab-list" onclick="switchTab('list')">📖 ดูทั้งหมด</div>
+        </div>
+
+        <!-- หน้าเมนูทบทวน (Review Tab) -->
+        <div id="setup-review" class="tab-content active">
+            <div class="menu-box">
+                <p class="text-white" style="margin-bottom: 10px; font-size: 16px;">
+                    คำศัพท์ที่ <b>"กำลังจำ"</b><br>
+                    <span id="vocab-count" style="font-size: 32px; font-weight: 700;">0</span> คำ
+                </p>
+                <button class="primary" onclick="startReview('learning')">🚀 ทบทวนคำใหม่</button>
+            </div>
+
+            <div class="menu-box">
+                <p class="text-white" style="margin-bottom: 10px; font-size: 16px;">
+                    ทบทวนคำศัพท์ที่ <b>"จำได้แล้ว"</b> <br>
+                    (มีทั้งหมด <span id="mastered-count">0</span> คำ)
+                </p>
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 10px;">
+                    <span class="text-white">สุ่มมาทวน: </span>
+                    <input type="number" id="review-amount" value="5" min="1" max="50" style="width: 70px; padding: 5px; text-align:center;">
+                    <span class="text-white">คำ</span>
+                </div>
+                <button onclick="startReview('remembered')">🔄 ทบทวนซ้ำ</button>
+            </div>
+        </div>
+
+        <!-- หน้าเพิ่มคำศัพท์ (Add Tab) -->
+        <div id="setup-add" class="tab-content">
+            <div class="menu-box">
+                <p class="text-white" style="margin-bottom: 15px; font-size: 14px;">
+                    💡 คุณสามารถพิมพ์ <b>คำศัพท์=คำแปล</b> ส่งเข้าแชท LINE เพื่อความรวดเร็วได้เช่นกัน
+                </p>
+                <div class="form-group">
+                    <label>คำศัพท์ (ภาษาอังกฤษ)</label>
+                    <input type="text" id="eng-input" placeholder="e.g. Apple" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>คำแปล (ภาษาไทย)</label>
+                    <input type="text" id="thai-input" placeholder="e.g. แอปเปิ้ล" autocomplete="off">
+                </div>
+                <button class="success" onclick="addVocabDirectly()">💾 บันทึกคำศัพท์</button>
+            </div>
+        </div>
+
+        <!-- หน้าดูคำศัพท์ทั้งหมด (List Tab) -->
+        <div id="setup-list" class="tab-content">
+            <div class="menu-box" style="padding-right: 10px;">
+                <p class="text-white" style="margin-bottom: 5px; font-size: 16px; font-weight: bold;">
+                    คลังคำศัพท์ทั้งหมด (<span id="total-vocab-count">0</span>)
+                </p>
+                <p class="text-white" style="font-size: 12px; margin-bottom: 10px; opacity: 0.8;">
+                    (แสดงคำศัพท์ที่เพิ่มล่าสุดไว้ด้านบน)
+                </p>
+                
+                <div class="vocab-list-container" id="vocab-list-container">
+                    <!-- รายการคำศัพท์จะถูกสร้างด้วย Javascript ตรงนี้ -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- หน้ากำลังทบทวน (ซ่อนเมนูหลักทั้งหมดตอนกำลังเล่น) -->
+    <div id="active-review" style="display: none;">
+        <div class="text-white" style="font-weight: 500; margin-bottom: 10px;" id="review-progress"></div>
+        
+        <div class="flashcard-container" id="card-container" onclick="flipCard()">
+            <div class="flashcard" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="word-text" id="card-eng">Word</div>
+                    <div class="hint">(แตะการ์ดเพื่อดูคำแปล)</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="word-text" id="card-thai">คำแปล</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="review-controls" id="initial-controls">
+            <button class="warning" onclick="markResult('learning')">❌ ลืม / จำไม่ได้</button>
+            <button class="success" onclick="prepareSpellingTest()">✅ จำได้ (ทดสอบพิมพ์)</button>
+        </div>
+
+        <div class="spell-input-group" id="spell-controls">
+            <p class="text-white" style="font-size: 14px; margin-bottom: -5px;">พิมพ์คำศัพท์ภาษาอังกฤษให้ถูกต้อง</p>
+            <input type="text" id="spell-input" placeholder="พิมพ์คำศัพท์ที่นี่..." autocomplete="off" style="text-align: center;">
+            <div class="feedback" id="spell-feedback"></div>
+            <div style="display: flex; gap: 10px;">
+                <button class="warning" onclick="failedSpelling()">ยอมแพ้ (จำไม่ได้)</button>
+                <button class="success" onclick="checkSpelling()">ตรวจคำตอบ</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- หน้าทบทวนเสร็จสิ้น -->
+    <div id="review-done" style="display: none; padding: 20px 0;">
+        <h2 class="text-white" style="font-size: 32px; margin-bottom: 15px;">🎉 ยอดเยี่ยม!</h2>
+        <p class="text-white" style="margin-bottom: 25px;">คุณทบทวนคำศัพท์เซ็ตนี้จบแล้ว</p>
+        <button onclick="location.reload()">กลับหน้าหลัก</button>
+        <button style="margin-top: 10px;" class="warning" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
+    </div>
+</div>
+
+<script>
+    // ================= การตั้งค่า =================
+    const LIFF_ID = "YOUR_LIFF_ID_HERE"; 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuU4Ub3ZUBTapnQ56-UMqkiYFm0HxXSvk5GizFj3aREtrIQu5-ATiUdyccTtkv1bg0Og/exec";
+    // ============================================
+    
+    let userId = "";
+    let allVocabs = [];
+    let reviewQueue = [];
+    let currentReviewIndex = 0;
+    let usingSampleData = false;
+    let currentMode = 'learning';
+
+    document.getElementById("spell-input").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") { event.preventDefault(); checkSpelling(); }
+    });
+
+    // ระบบสลับหน้าต่าง (Tabs)
+    function switchTab(tab) {
+        // ล้างสถานะ active เก่าทั้งหมด
+        ['review', 'add', 'list'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.remove('active');
+            document.getElementById(`setup-${t}`).classList.remove('active');
+        });
+        
+        // เพิ่มสถานะ active ให้แท็บที่เลือก
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.getElementById(`setup-${tab}`).classList.add('active');
+
+        // ถ้าเปิดหน้า List ให้เรนเดอร์คำศัพท์ใหม่
+        if(tab === 'list') {
+            renderVocabList();
+        }
+    }
+
+    async function initLIFF() {
+        document.getElementById('loading').style.display = 'block';
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                document.getElementById('profile-name').innerText = `(${profile.displayName})`;
+                fetchVocabs();
+            } else {
+                userId = "test_user";
+                document.getElementById('profile-name').innerText = "(ทดสอบบนเบราว์เซอร์)";
+                fetchVocabs();
+            }
+        } catch (error) {
+            userId = "test_user";
+            document.getElementById('profile-name').innerText = "(โหมดจำลอง)";
+            fetchVocabs();
+        }
+    }
+
+    async function fetchVocabs() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('main-content').style.display = 'none';
+        try {
+            const response = await fetch(`${WEB_APP_URL}?userId=${userId}`);
+            allVocabs = await response.json();
+            if(allVocabs.length === 0) throw new Error("No data");
+        } catch (error) {
+            allVocabs = [
+                { row: 0, eng: "Meticulous", thai: "พิถีพิถัน", status: "learning" },
+                { row: 0, eng: "Resilient", thai: "ฟื้นตัวเร็ว", status: "learning" },
+                { row: 0, eng: "Empathy", thai: "ความเห็นอกเห็นใจ", status: "remembered" },
+                { row: 0, eng: "Apple", thai: "แอปเปิ้ล", status: "remembered" },
+                { row: 0, eng: "Procrastinate", thai: "ผัดวันประกันพรุ่ง", status: "learning" }
+            ];
+            usingSampleData = true;
+        }
+
+        updateMenuStats();
+        // ถ้าอยู่หน้า List อยู่แล้ว ให้วาดใหม่ด้วย
+        if(document.getElementById('tab-list').classList.contains('active')) renderVocabList();
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+    }
+
+    function updateMenuStats() {
+        const learningCount = allVocabs.filter(v => v.status === 'learning').length;
+        const rememberedCount = allVocabs.filter(v => v.status === 'remembered').length;
+        
+        document.getElementById('vocab-count').innerText = learningCount;
+        document.getElementById('mastered-count').innerText = rememberedCount;
+        
+        document.getElementById('review-amount').max = rememberedCount;
+        if(rememberedCount < 5 && rememberedCount > 0) document.getElementById('review-amount').value = rememberedCount;
+    }
+
+    // ฟังก์ชันสร้างรายการคำศัพท์ทั้งหมด (วาด HTML ลงไป)
+    function renderVocabList() {
+        const container = document.getElementById('vocab-list-container');
+        document.getElementById('total-vocab-count').innerText = allVocabs.length;
+        
+        if(allVocabs.length === 0) {
+            container.innerHTML = '<p class="text-white" style="text-align:center; margin-top:20px;">ยังไม่มีคำศัพท์ในระบบ</p>';
+            return;
+        }
+
+        let html = '';
+        // สลับเอาคำที่เพิ่มล่าสุด (อยู่ล่างสุดใน Sheet) ขึ้นมาโชว์บนสุด
+        const reversedVocabs = [...allVocabs].reverse();
+        
+        reversedVocabs.forEach(v => {
+            const isLearning = v.status === 'learning';
+            const badgeClass = isLearning ? 'status-learning' : 'status-remembered';
+            const badgeText = isLearning ? 'กำลังจำ' : 'จำได้แล้ว';
+            
+            html += `
+            <div class="vocab-item">
+                <div class="words">
+                    <span class="eng">${v.eng}</span>
+                    <span class="thai">${v.thai}</span>
+                </div>
+                <span class="status-badge ${badgeClass}">${badgeText}</span>
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    // ฟังก์ชันสำหรับบันทึกคำศัพท์ใหม่จากหน้าเว็บ
+    async function addVocabDirectly() {
+        const eng = document.getElementById('eng-input').value.trim();
+        const thai = document.getElementById('thai-input').value.trim();
+        
+        if(!eng || !thai) return alert('กรุณากรอกทั้งคำศัพท์และคำแปลครับ');
+        if(usingSampleData && userId === "test_user") return alert('โหมดทดสอบไม่สามารถบันทึกข้อมูลจริงได้ครับ');
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('main-content').style.display = 'none';
+
+        try {
+            await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'add', userId: userId, eng: eng, thai: thai })
+            });
+            
+            document.getElementById('eng-input').value = '';
+            document.getElementById('thai-input').value = '';
+            alert(`บันทึกคำศัพท์ ${eng} เรียบร้อยแล้ว!`);
+            fetchVocabs(); // ดึงข้อมูลใหม่
+            switchTab('list'); // เด้งไปหน้าดูคำศัพท์ทั้งหมด เพื่อให้เห็นว่าคำใหม่เข้าแล้ว
+        } catch(e) {
+            alert('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่');
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+        }
+    }
+
+    // ============= ระบบทบทวน =============
+    function startReview(mode) {
+        currentMode = mode;
+        let pool = allVocabs.filter(v => v.status === mode);
+        
+        if (pool.length === 0) return alert(mode === 'learning' ? 'ไม่มีคำศัพท์ใหม่ให้ทบทวนครับ' : 'ยังไม่มีคำศัพท์ที่จำได้เลยครับ');
+
+        if (mode === 'learning') {
+            reviewQueue = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
+        } else {
+            const amount = parseInt(document.getElementById('review-amount').value) || 5;
+            reviewQueue = pool.sort(() => 0.5 - Math.random()).slice(0, amount);
+        }
+        
+        currentReviewIndex = 0;
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('active-review').style.display = 'block';
+        showNextCard();
+    }
+
+    function showNextCard() {
+        if (currentReviewIndex >= reviewQueue.length) {
+            document.getElementById('active-review').style.display = 'none';
+            document.getElementById('review-done').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('initial-controls').style.display = 'flex';
+        document.getElementById('spell-controls').style.display = 'none';
+        document.getElementById('spell-input').value = '';
+        document.getElementById('spell-feedback').innerText = '';
+        document.getElementById('flashcard').classList.remove('is-flipped');
+        document.getElementById('card-container').style.pointerEvents = 'auto';
+
+        const currentWord = reviewQueue[currentReviewIndex];
+        const engElem = document.getElementById('card-eng');
+        const thaiElem = document.getElementById('card-thai');
+        
+        engElem.innerText = currentWord.eng;
+        engElem.style.fontSize = currentWord.eng.length > 10 ? '26px' : '36px';
+        
+        thaiElem.innerText = currentWord.thai;
+        thaiElem.style.fontSize = currentWord.thai.length > 15 ? '22px' : '32px';
+
+        document.getElementById('review-progress').innerText = `กำลังทบทวนคำที่ ${currentReviewIndex + 1} จาก ${reviewQueue.length}`;
+    }
+
+    function flipCard() { document.getElementById('flashcard').classList.toggle('is-flipped'); }
+
+    function prepareSpellingTest() {
+        document.getElementById('flashcard').classList.add('is-flipped');
+        document.getElementById('card-container').style.pointerEvents = 'none';
+        document.getElementById('initial-controls').style.display = 'none';
+        document.getElementById('spell-controls').style.display = 'flex';
+        document.getElementById('spell-input').focus();
+    }
+
+    function checkSpelling() {
+        const currentWord = reviewQueue[currentReviewIndex];
+        const userInput = document.getElementById('spell-input').value.trim().toLowerCase();
+        const correctAnswer = currentWord.eng.toLowerCase();
+        const feedback = document.getElementById('spell-feedback');
+
+        if (userInput === correctAnswer) {
+            feedback.innerText = "✅ ถูกต้อง!";
+            feedback.className = "feedback correct";
+            
+            if(currentMode === 'learning' && !usingSampleData) {
+                updateGoogleSheet(currentWord.row, 'remembered');
+            }
+            
+            currentReviewIndex++;
+            setTimeout(showNextCard, 800); 
+        } else {
+            feedback.innerText = "❌ ยังไม่ถูก ลองอีกครั้ง!";
+            feedback.className = "feedback wrong";
+            const input = document.getElementById('spell-input');
+            input.style.transform = 'translateX(-10px)';
+            setTimeout(() => input.style.transform = 'translateX(10px)', 100);
+            setTimeout(() => input.style.transform = 'translateX(0)', 200);
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    function failedSpelling() {
+        const currentWord = reviewQueue[currentReviewIndex];
+        const feedback = document.getElementById('spell-feedback');
+        feedback.innerText = `เฉลย: ${currentWord.eng}`;
+        feedback.className = "feedback wrong";
+        
+        reviewQueue.push(currentWord);
+        currentReviewIndex++;
+        setTimeout(showNextCard, 1500); 
+    }
+
+    function markResult(status) {
+        if(status === 'learning') {
+            const currentWord = reviewQueue[currentReviewIndex];
+            reviewQueue.push(currentWord);
+            if(currentMode === 'remembered' && !usingSampleData) {
+                updateGoogleSheet(currentWord.row, 'learning');
+            }
+        }
+        currentReviewIndex++;
+        showNextCard();
+    }
+
+    function updateGoogleSheet(row, status) {
+        try {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'update', row: row, status: status })
+            });
+        } catch(e) {}
+    }
+
+    window.onload = initLIFF;
+</script>
+</body>
+</html>
